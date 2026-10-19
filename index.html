@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Controle de estoque com curva ABC e reposição · Fernando Henrique Almeida Dias</title><meta name="description" content="Evitar faltas e desperdício, ligando o estoque às compras e ao orçamento.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#FAFAF8;--ink:#16181A;--muted:#63666A;--line:#E3E2DD;--acc:#1F5F54;--sf:#fff;--warn:#B7791F;--bad:#B03A2E}
+@media(prefers-color-scheme:dark){:root{--bg:#111315;--ink:#ECEDEE;--muted:#9A9FA5;--line:#2A2E32;--acc:#6FC4B2;--sf:#181B1E;--warn:#E0A458;--bad:#E88A7B}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:300 17px/1.7 "IBM Plex Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.w{max-width:760px;margin:0 auto;padding:0 24px}
+header{padding:clamp(56px,12vh,110px) 0 40px}
+.k{color:var(--acc);font-size:.8rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;margin:0 0 18px}
+h1,h2{font-family:"Source Serif 4",Georgia,serif;font-weight:400;line-height:1.15;margin:0}
+h1{font-size:clamp(2rem,6vw,3.2rem);letter-spacing:-.02em}h2{font-size:1.5rem;margin-bottom:14px}
+.lead{color:var(--muted);font-size:1.15rem;max-width:34em;margin:20px 0 0}
+section{padding:36px 0;border-top:1px solid var(--line)}
+section p{margin:0;color:var(--muted)}
+ul.d{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.d a{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:16px 18px;border:1px solid var(--line);border-radius:10px;background:var(--sf);text-decoration:none;color:var(--ink);transition:border-color .2s,transform .2s}
+.d a:hover{border-color:var(--acc);transform:translateY(-2px)}
+.d b{font:500 1.05rem "Source Serif 4",Georgia,serif;display:block}.d small{color:var(--muted);font-size:.9rem;display:block;font-weight:300}
+.d span{color:var(--acc);font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+dl{margin:0}dt{color:var(--acc);font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;font-weight:500;margin-top:18px}dd{margin:2px 0 0;color:var(--muted)}
+footer{padding:36px 0 64px;border-top:1px solid var(--line);color:var(--muted);font-size:.92rem}footer a{color:var(--ink)}
+
+main.w{max-width:1000px}
+.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+@media(max-width:760px){.cards{grid-template-columns:1fr}}
+.card{border:1px solid var(--line);border-radius:14px;background:var(--sf);overflow:hidden;display:flex;flex-direction:column;transition:border-color .25s,box-shadow .25s,transform .25s}
+.card:hover{border-color:var(--acc);transform:translateY(-3px);box-shadow:0 14px 34px -18px rgba(0,0,0,.35)}
+.card canvas{display:block;width:100%;background:var(--bg);border-bottom:1px solid var(--line)}
+.cb{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px 18px}
+.cb b{font:500 1.05rem "Source Serif 4",Georgia,serif;display:block}.cb small{color:var(--muted);font-size:.9rem;display:block;font-weight:300;line-height:1.5;margin-top:2px}
+.cb a{flex:none;color:var(--acc);font-size:.78rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;white-space:nowrap;border:1px solid var(--acc);border-radius:999px;padding:8px 14px;transition:background .2s,color .2s}
+.cb a:hover{background:var(--acc);color:var(--bg)}
+.hint{font-size:.85rem;margin-top:14px!important}
+dl{max-width:720px}
+:focus-visible{outline:2px solid var(--acc);outline-offset:3px}
+</style></head><body>
+<header><div class="w"><p class="k">Compras · Projeto</p><h1>Controle de estoque com curva ABC e reposição</h1><p class="lead">Evitar faltas e desperdício, ligando o estoque às compras e ao orçamento.</p></div></header>
+<main class="w">
+<section><h2>Modelos para baixar</h2><div class="cards">
+<article class="card"><canvas id="cv-estoque" role="img" aria-label="Prévia do controle de estoque: indicadores de itens para comprar e repor e um gráfico de Pareto da curva ABC com dez itens de exemplo."></canvas><div class="cb"><div><b>Controle de estoque</b><small>Estoque mínimo, ponto de reposição, alertas de compra e curva ABC automáticos.</small></div><a href="modelos/controle-estoque.xlsx" download>Baixar XLSX</a></div></article>
+<article class="card"><canvas id="cv-perdas" role="img" aria-label="Prévia do relatório de perdas: gráfico em anel com as perdas por motivo e um resumo com valores e percentuais de exemplo."></canvas><div class="cb"><div><b>Relatório de perdas</b><small>Registro de perdas por motivo, com resumo e gráfico.</small></div><a href="modelos/relatorio-perdas.xlsx" download>Baixar XLSX</a></div></article>
+</div><p class="hint">Prévias ilustrativas com dados de exemplo: as planilhas para baixar vêm em branco, prontas para você preencher. Passe o mouse sobre os gráficos para ver os detalhes.</p></section>
+<section><h2>Como funciona</h2><dl><dt>Etapas</dt><dd>fazer o inventário inicial, classificar os itens pela curva ABC, definir estoque mínimo e ponto de reposição, gerar a lista de compras a partir dos alertas e conferir o estoque todo mês.</dd><dt>Indicadores</dt><dd>perdas por mês, faltas de produto, giro de estoque e custo do estoque parado.</dd><dt>Base</dt><dd>cursos de Almoxarifado e de Administração de Materiais e Estoque (SENAI).</dd></dl></section>
+</main>
+<footer><div class="w">Por <a href="https://www.linkedin.com/in/fernando-hnerique-50b21b299" target="_blank" rel="noopener">Fernando Henrique Almeida Dias</a> · <a href="mailto:fh751763@gmail.com">Fale comigo</a></div></footer>
+<script>
+(()=>{
+const SERIF='"Source Serif 4",Georgia,serif',SANS='"IBM Plex Sans",system-ui,sans-serif';
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Dados de exemplo e as mesmas regras da planilha (estoque mínimo, ponto de reposição, situação e curva ABC)
+const SEG=7; // dias de cobertura de segurança
+const RAW=[['Filé de frango',48,24.6,14,3],['Arroz',180,4.5,90,5],['Óleo',70,8.8,20,4],['Queijo',30,15.5,6,3],['Feijão',100,2.7,70,5],['Tomate',60,2.9,12,2],['Cebola',50,2.5,40,2],['Sal',25,2.3,30,7],['Temperos',20,1.9,16,5],['Embalagens',15,1.7,40,7]];
+const ITEMS=RAW.map(([n,c,k,at,pz])=>{const mn=Math.ceil(c/30*SEG),pr=mn+Math.ceil(c/30*pz);return{n,at,k,val:c*12*k,sit:at<=mn?'COMPRAR JÁ':at<=pr?'Repor':'OK'}}).sort((x,y)=>y.val-x.val);
+const TOT=ITEMS.reduce((p,x)=>p+x.val,0);
+ITEMS.forEach(x=>{x.cum=ITEMS.filter(y=>y.val>=x.val).reduce((p,y)=>p+y.val,0)/TOT;x.cls=x.cum<=.8?'A':x.cum<=.95?'B':'C'});
+const nBuy=ITEMS.filter(x=>x.sit==='COMPRAR JÁ').length,nRep=ITEMS.filter(x=>x.sit==='Repor').length;
+const parado=ITEMS.reduce((p,x)=>p+x.at*x.k,0),giro=TOT/parado;
+const PERDAS=[['Vencimento',380],['Erro de preparo',210],['Quebra',120],['Armazenamento',90],['Outro',60]];
+const PT=PERDAS.reduce((p,x)=>p+x[1],0);
+const brl=v=>'R$ '+Math.round(v).toLocaleString('pt-BR');
+const pc=(v,d=1)=>(v*100).toFixed(d).replace('.',',')+'%';
+const ease=t=>1-Math.pow(1-t,3),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const colors=()=>{const s=getComputedStyle(document.documentElement),g=n=>s.getPropertyValue(n).trim();return{ink:g('--ink'),muted:g('--muted'),line:g('--line'),acc:g('--acc'),sf:g('--sf'),bg:g('--bg'),warn:g('--warn'),bad:g('--bad')}};
+const alpha=(c,a)=>{const g=document.createElement('canvas').getContext('2d');g.fillStyle=c;const h=g.fillStyle;if(h[0]!=='#')return h.replace(/rgba?\(([^)]+)\)/,(m,x)=>'rgba('+x.split(',').slice(0,3).join(',')+','+a+')');const n=parseInt(h.slice(1),16);return'rgba('+(n>>16)+','+((n>>8)&255)+','+(n&255)+','+a+')'};
+function rr(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
+function tx(g,t,x,y,size,color,o={}){g.font=(o.w||400)+' '+size+'px '+(o.f||SANS);g.fillStyle=color;g.textAlign=o.a||'left';g.textBaseline=o.b||'alphabetic';if('letterSpacing' in g)g.letterSpacing=(o.ls||0)+'px';g.fillText(t,x,y);if('letterSpacing' in g)g.letterSpacing='0px'}
+const tw=(g,t,size,w)=>{g.font=(w||400)+' '+size+'px '+SANS;return g.measureText(t).width};
+function tip(g,s,C,x,y,lines,bounds){
+ const f=10*s;g.font='500 '+f+'px '+SANS;const w=Math.max(...lines.map(l=>g.measureText(l).width))+16*s,h=(lines.length*14+8)*s;
+ const bx=clamp(x-w/2,bounds[0]+4*s,bounds[1]-w-4*s),by=Math.max(y-h-10*s,bounds[2]+4*s);
+ g.save();g.shadowColor='rgba(0,0,0,.22)';g.shadowBlur=10*s;g.shadowOffsetY=3*s;rr(g,bx,by,w,h,6*s);g.fillStyle=C.ink;g.fill();g.restore();
+ lines.forEach((l,i)=>tx(g,l,bx+8*s,by+(4+14*(i+.5))*s,f,i?alpha(C.bg,.75):C.bg,{b:'middle',w:i?400:500}));
+}
+const sitColor=(C,x)=>x.sit==='COMPRAR JÁ'?C.bad:x.sit==='Repor'?C.warn:alpha(C.acc,.5);
+
+// ---------- Prévia 1: controle de estoque (indicadores + curva ABC) ----------
+function estoque(g,w,h,p,C,hv){
+ const s=w/520,pad=16*s;
+ rr(g,.5,.5,w-1,h-1,12*s);g.fillStyle=C.bg;g.fill();g.strokeStyle=C.line;g.lineWidth=1;g.stroke();
+ tx(g,'Controle de estoque',pad,pad+16*s,17*s,C.ink,{f:SERIF,w:500});
+ tx(g,'dados ilustrativos',w-pad,pad+15*s,10*s,C.muted,{a:'right'});
+ // indicadores
+ const K=[['Comprar já',String(nBuy),C.bad],['Repor',String(nRep),C.warn],['Valor parado',brl(parado),null],['Giro anual',giro.toFixed(1).replace('.',',')+'×',null]];
+ const ky=pad+30*s,kh=52*s,kg=8*s,kw=(w-2*pad-3*kg)/4;
+ K.forEach((k,i)=>{const kp=ease(clamp(p*2.2-i*.1,0,1)),kx=pad+i*(kw+kg);g.globalAlpha=kp;
+  rr(g,kx,ky,kw,kh,9*s);g.fillStyle=C.sf;g.fill();g.strokeStyle=C.line;g.stroke();
+  if(k[2]){g.beginPath();g.arc(kx+12*s,ky+15*s,3.2*s,0,7);g.fillStyle=k[2];g.fill()}
+  tx(g,k[0].toUpperCase(),kx+(k[2]?20:12)*s,ky+18*s,7.5*s,C.muted,{w:500,ls:.9*s});
+  tx(g,k[1],kx+12*s,ky+42*s,19*s,C.ink,{f:SERIF,w:500})});
+ g.globalAlpha=1;
+ // cartão da curva ABC
+ const cx=pad,cy=ky+kh+10*s,cw=w-2*pad,ch=h-pad-cy;
+ rr(g,cx,cy,cw,ch,10*s);g.fillStyle=C.sf;g.fill();g.strokeStyle=C.line;g.stroke();
+ tx(g,'CURVA ABC · PARETO',cx+12*s,cy+19*s,8*s,C.muted,{w:500,ls:1.1*s});
+ [['C',.28],['B',.55],['A',1]].forEach(([l,a],i)=>{const lx=cx+cw-12*s-i*60*s;tx(g,'Classe '+l,lx,cy+19*s,8*s,C.muted,{a:'right'});
+  const wt=tw(g,'Classe '+l,8*s);rr(g,lx-wt-13*s,cy+12.5*s,8*s,8*s,2*s);g.fillStyle=alpha(C.acc,a);g.fill()});
+ const px0=cx+14*s,px1=cx+cw-34*s,py0=cy+38*s,py1=cy+ch-50*s,n=ITEMS.length,slot=(px1-px0)/n,bw=slot*.62;
+ const Y=v=>py1-v*(py1-py0),XC=i=>px0+slot*(i+.5);
+ // eixo direito e limites 80% / 95%
+ g.lineWidth=1;g.strokeStyle=C.line;g.setLineDash([]);g.beginPath();g.moveTo(px0,py1+.5);g.lineTo(px1+8*s,py1+.5);g.stroke();
+ [[.8,'80%'],[.95,'95%']].forEach(([v,l])=>{g.strokeStyle=alpha(C.muted,.45);g.setLineDash([3*s,3*s]);g.beginPath();g.moveTo(px0,Y(v));g.lineTo(px1+8*s,Y(v));g.stroke();g.setLineDash([]);tx(g,l,px1+12*s,Y(v)+3*s,8*s,C.muted)});
+ tx(g,'0%',px1+12*s,py1+3*s,8*s,C.muted);
+ // barras (valor anual ÷ total) com crescimento escalonado
+ ITEMS.forEach((x,i)=>{const e=ease(clamp(p*1.6-i*.05,0,1)),bh=(x.val/TOT)*(py1-py0)*e,a=x.cls==='A'?1:x.cls==='B'?.55:.28;
+  rr(g,XC(i)-bw/2,py1-bh,bw,Math.max(bh,.1),Math.min(3*s,bw/2));g.fillStyle=alpha(C.acc,a);g.fill();
+  tx(g,String(i+1),XC(i),py1+13*s,8*s,C.muted,{a:'center'});
+  g.globalAlpha=e;g.beginPath();g.arc(XC(i),py1+26*s,3.2*s,0,7);g.fillStyle=sitColor(C,x);g.fill();g.globalAlpha=1});
+ // linha do % acumulado
+ const lp=ease(clamp((p-.25)/.75,0,1));
+ g.save();g.beginPath();g.rect(px0,cy,(px1-px0)*lp+slot*.5*lp,ch);g.clip();
+ g.beginPath();ITEMS.forEach((x,i)=>i?g.lineTo(XC(i),Y(x.cum)):g.moveTo(XC(i),Y(x.cum)));g.strokeStyle=C.ink;g.lineWidth=1.8*s;g.lineJoin='round';g.stroke();g.restore();
+ ITEMS.forEach((x,i)=>{if(XC(i)>px0+(px1-px0)*lp+slot*.5*lp)return;g.beginPath();g.arc(XC(i),Y(x.cum),2.6*s,0,7);g.fillStyle=C.sf;g.fill();g.strokeStyle=C.ink;g.lineWidth=1.4*s;g.stroke()});
+ // legenda da situação
+ let lx=cx+12*s;const ly=cy+ch-10*s;
+ [['comprar já',C.bad],['repor',C.warn],['em dia',alpha(C.acc,.5)]].forEach(([l,c])=>{g.beginPath();g.arc(lx+3*s,ly-3*s,3*s,0,7);g.fillStyle=c;g.fill();tx(g,l,lx+10*s,ly,8*s,C.muted);lx+=tw(g,l,8*s)+24*s});
+ tx(g,'situação do item',cx+cw-12*s,ly,8*s,C.muted,{a:'right'});
+ // hover
+ if(hv&&p>=1&&hv.x>px0&&hv.x<px1+8*s&&hv.y>cy+24*s&&hv.y<py1+34*s){
+  const b=clamp(Math.floor((hv.x-px0)/slot),0,n-1),x=ITEMS[b];
+  g.fillStyle=alpha(C.acc,.08);g.fillRect(px0+b*slot,py0-6*s,slot,py1-py0+40*s);
+  g.beginPath();g.arc(XC(b),Y(x.cum),4.2*s,0,7);g.fillStyle=C.ink;g.fill();g.strokeStyle=C.sf;g.lineWidth=2*s;g.stroke();
+  tip(g,s,C,XC(b),Math.min(Y(x.cum),py1-(x.val/TOT)*(py1-py0)),[x.n+' · classe '+x.cls,brl(x.val)+'/ano · '+pc(x.cum)+' acum.',x.sit==='OK'?'estoque em dia':x.sit.toLowerCase()],[cx,cx+cw,cy]);
+ }
+}
+
+// ---------- Prévia 2: relatório de perdas (anel + resumo por motivo) ----------
+function perdas(g,w,h,p,C,hv){
+ const s=w/520,pad=16*s;
+ rr(g,.5,.5,w-1,h-1,12*s);g.fillStyle=C.bg;g.fill();g.strokeStyle=C.line;g.lineWidth=1;g.stroke();
+ tx(g,'Relatório de perdas',pad,pad+16*s,17*s,C.ink,{f:SERIF,w:500});
+ tx(g,'dados ilustrativos',w-pad,pad+15*s,10*s,C.muted,{a:'right'});
+ const cx=pad,cy=pad+30*s,cw=w-2*pad,ch=h-pad-cy-42*s;
+ rr(g,cx,cy,cw,ch,10*s);g.fillStyle=C.sf;g.fill();g.strokeStyle=C.line;g.stroke();
+ const A=[1,.72,.52,.36,.22],R=Math.min(cw*.23,ch*.4),rw=R*.3,mx=cx+cw*.27,my=cy+ch/2,rm=R-rw/2;
+ // hover: por segmento do anel ou por linha da lista
+ let hi=-1;const rowH=Math.min(46*s,(ch-24*s)/5),rx0=cx+cw*.54,rx1=cx+cw-16*s,ry0=cy+(ch-rowH*5)/2;
+ if(hv&&p>=1){const dx=hv.x-mx,dy=hv.y-my,d=Math.hypot(dx,dy);
+  if(d>R-rw-4*s&&d<R+8*s){let a=Math.atan2(dy,dx)+Math.PI/2;if(a<0)a+=Math.PI*2;let acc=0;for(let i=0;i<PERDAS.length;i++){const sw=PERDAS[i][1]/PT*Math.PI*2;if(a>=acc&&a<acc+sw){hi=i;break}acc+=sw}}
+  else if(hv.x>rx0-10*s&&hv.x<rx1&&hv.y>ry0&&hv.y<ry0+rowH*5)hi=Math.floor((hv.y-ry0)/rowH)}
+ // anel
+ const sweep=Math.PI*2*ease(clamp(p*1.3,0,1));let a0=-Math.PI/2,acc=0;
+ PERDAS.forEach(([n,v],i)=>{const sw=v/PT*Math.PI*2,gap=.028,from=acc,to=acc+sw;acc=to;if(from>=sweep)return;
+  const e=Math.min(to,sweep),lw=rw+(hi===i?7*s:0);
+  g.beginPath();g.arc(mx,my,rm+(hi===i?1*s:0),a0+from+gap/2,a0+e-gap/2);g.strokeStyle=alpha(C.acc,hi>=0&&hi!==i?A[i]*.45:A[i]);g.lineWidth=lw;g.lineCap='butt';g.stroke()});
+ g.lineWidth=1;
+ // centro
+ const ct=hi>=0?PERDAS[hi]:null;
+ tx(g,ct?brl(ct[1]):brl(PT),mx,my+2*s,22*s,C.ink,{f:SERIF,w:500,a:'center'});
+ tx(g,ct?ct[0].toLowerCase():'total do período',mx,my+20*s,9*s,C.muted,{a:'center'});
+ if(ct)tx(g,pc(ct[1]/PT),mx,my-24*s,10*s,C.acc,{a:'center',w:500});
+ // lista por motivo
+ PERDAS.forEach(([n,v],i)=>{const rp=ease(clamp(p*1.7-.2-i*.08,0,1)),y=ry0+i*rowH,on=hi===i;g.globalAlpha=rp;
+  if(on){rr(g,rx0-10*s,y+2*s,rx1-rx0+16*s,rowH-4*s,7*s);g.fillStyle=alpha(C.acc,.07);g.fill()}
+  g.beginPath();g.arc(rx0+3*s,y+rowH*.32,4*s,0,7);g.fillStyle=alpha(C.acc,A[i]);g.fill();
+  tx(g,n,rx0+14*s,y+rowH*.32+4*s,11.5*s,C.ink,{w:on?500:400});
+  tx(g,brl(v),rx1,y+rowH*.32+4*s,11.5*s,C.ink,{a:'right',f:SERIF,w:500});
+  const by=y+rowH*.64,bw=rx1-rx0-10*s;
+  rr(g,rx0+14*s,by,bw,3.4*s,1.7*s);g.fillStyle=C.line;g.fill();
+  rr(g,rx0+14*s,by,Math.max(bw*(v/PT)*rp,.1),3.4*s,1.7*s);g.fillStyle=alpha(C.acc,A[i]);g.fill();
+  g.globalAlpha=1});
+ // frase-resumo
+ const iy=cy+ch+8*s,ih=32*s,ip=ease(clamp((p-.6)/.4,0,1));g.globalAlpha=ip;
+ rr(g,cx,iy,cw,ih,9*s);g.fillStyle=alpha(C.acc,.07);g.fill();g.strokeStyle=alpha(C.acc,.25);g.stroke();
+ const top=PERDAS[0];g.beginPath();g.arc(cx+16*s,iy+ih/2,3.4*s,0,7);g.fillStyle=C.acc;g.fill();
+ tx(g,top[0]+' responde por '+pc(top[1]/PT,0)+' das perdas do período.',cx+28*s,iy+ih/2,10.5*s,C.ink,{b:'middle'});
+ g.globalAlpha=1;
+}
+
+// ---------- montagem (DPR, redimensionamento, animação ao aparecer) ----------
+const all=[];
+function mount(id,ar,draw){
+ const cv=document.getElementById(id),g=cv.getContext('2d');let w=0,h=0,p=reduce?1:0,hv=null,started=false;
+ const render=()=>{if(!w)return;g.clearRect(0,0,w,h);draw(g,w,h,p,colors(),hv)};
+ const size=()=>{w=cv.getBoundingClientRect().width;if(!w)return;h=w/ar;const d=window.devicePixelRatio||1;cv.width=Math.round(w*d);cv.height=Math.round(h*d);cv.style.height=h+'px';g.setTransform(d,0,0,d,0,0);render()};
+ const run=()=>{if(started)return;started=true;if(reduce){p=1;render();return}let t0=null;const f=ts=>{if(t0==null)t0=ts;p=Math.min(1,(ts-t0)/2000);render();if(p<1)requestAnimationFrame(f)};requestAnimationFrame(f)};
+ new ResizeObserver(size).observe(cv);size();
+ new IntersectionObserver((e,o)=>{if(e[0].isIntersecting){run();o.disconnect()}},{threshold:.25}).observe(cv);
+ cv.addEventListener('pointermove',e=>{const r=cv.getBoundingClientRect();hv={x:e.clientX-r.left,y:e.clientY-r.top};if(p>=1)render()});
+ cv.addEventListener('pointerleave',()=>{hv=null;if(p>=1)render()});
+ all.push(render);
+}
+mount('cv-estoque',1.2,estoque);mount('cv-perdas',1.2,perdas);
+const redraw=()=>all.forEach(r=>r());
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',redraw);
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(redraw);
+})();
+</script>
+</body></html>
