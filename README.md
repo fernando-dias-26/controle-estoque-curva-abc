@@ -11,12 +11,5 @@ Evitar faltas e desperdício, ligando o estoque às compras e ao orçamento.
 - **Indicadores:** perdas por mês, faltas de produto, giro de estoque e custo do estoque parado.
 - **Base:** cursos de Almoxarifado e de Administração de Materiais e Estoque (SENAI).
 
-## Como publicar na Vercel (sem programar)
-1. No GitHub, crie um repositório novo e envie estes arquivos (botão **Add file → Upload files**).
-2. Em [vercel.com](https://vercel.com), clique em **Add New → Project** e escolha este repositório.
-3. Deixe tudo como está e clique em **Deploy**. Em alguns segundos o site estará no ar.
-
-Para atualizar, troque os arquivos no GitHub e a Vercel publica de novo sozinha.
-
 ## Autor
 [Fernando Henrique Almeida Dias](https://www.linkedin.com/in/fernando-hnerique-50b21b299)
